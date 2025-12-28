@@ -28,6 +28,8 @@ void main() async {
 
     app.get('/events', eventController.getAllEvents);
     app.post('/events', eventController.createEvent);
+    app.post('/registrations', eventController.registerToEvent);
+
 
     // Pipeline para manejo de errores y logs
     final handler = Pipeline()
