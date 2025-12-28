@@ -1,0 +1,6 @@
+### Variables Globales
+@baseUrl = http://localhost:8080
+
+GET {{baseUrl}}/events
+
+###
