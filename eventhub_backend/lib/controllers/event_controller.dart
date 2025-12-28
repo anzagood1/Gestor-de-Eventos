@@ -50,4 +50,28 @@ class EventController {
     }
   }
 
+  Future<Response> registerToEvent(Request request) async {
+    try {
+      final payload = jsonDecode(await request.readAsString());
+      final int eventId = payload['eventId'];
+      final String userName = payload['userName'];
+
+      final result = await _db.query(
+        'INSERT INTO registrations (event_id, user_name) VALUES (?, ?)',
+        [eventId, userName]
+      );
+
+      return Response.ok(
+        jsonEncode({
+          'status': 'registered',
+          'message': 'Inscripción procesada por Gilmar Muñoz',
+          'registrationId': result.insertId
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(body: 'Error en la inscripción de Gilmar Muñoz: $e');
+    }
+  }
+
 }
