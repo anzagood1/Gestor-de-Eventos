@@ -31,4 +31,23 @@ class EventController {
       return Response.internalServerError(body: 'Error: $e');
     }
   }
+
+  Future<Response> createEvent(Request request) async {
+    try {
+      final payload = jsonDecode(await request.readAsString());
+      
+      final result = await _db.query(
+        'INSERT INTO events (title, description, event_date, location, max_capacity) VALUES (?, ?, ?, ?, ?)',
+        [payload['title'], payload['description'], payload['date'], payload['location'], payload['maxCapacity']]
+      );
+
+      return Response.ok(
+        jsonEncode({'message': 'Evento creado con éxito', 'id': result.insertId}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(body: 'Error al crear evento: $e');
+    }
+  }
+
 }

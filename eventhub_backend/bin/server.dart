@@ -27,7 +27,7 @@ void main() async {
     final app = Router();
 
     app.get('/events', eventController.getAllEvents);
-
+    app.post('/events', eventController.createEvent);
 
     // Pipeline para manejo de errores y logs
     final handler = Pipeline()

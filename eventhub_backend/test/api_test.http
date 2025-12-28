@@ -3,4 +3,15 @@
 
 GET {{baseUrl}}/events
 
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+    "title": "Conferencia de Tecnología 2025",
+    "description": "La mayor conferencia de tecnología del año con networking.",
+    "date": "2025-12-20 10:00:00",
+    "location": "Centro de Convenciones",
+    "maxCapacity": 200
+}
+
 ###
