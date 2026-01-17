@@ -79,29 +79,57 @@ export default function App() {
     }
   };
 
-  const handleCreateEvent = (eventData: Omit<Event, 'id' | 'currentAttendees' | 'isRegistered'>) => {
-    const newEvent: Event = {
-      ...eventData,
-      id: Date.now().toString(),
-      currentAttendees: 0,
-      isRegistered: false,
-    };
-    setEvents([newEvent, ...events]);
-    toast.success('¡Evento creado exitosamente!');
+  const handleCreateEvent = async (eventData: {
+    title: string;
+    date: string;
+    location: string;
+    description: string;
+    maxAttendees: number;
+  }) => {
+    try {
+      await apiService.createEvent(eventData);
+      toast.success('¡Evento creado exitosamente!');
+      await loadEvents(); // ← Recargar eventos desde el backend
+    } catch (err: any) {
+      toast.error(err.message || 'Error al crear el evento');
+      console.error(err);
+    }
   };
 
-  const handleRegister = (eventId: string) => {
-    setEvents(events.map(event => {
-      if (event.id === eventId && !event.isRegistered && event.currentAttendees < event.maxAttendees) {
-        toast.success(`¡Te has inscrito a "${event.title}"!`);
-        return {
-          ...event,
-          currentAttendees: event.currentAttendees + 1,
-          isRegistered: true,
-        };
-      }
-      return event;
-    }));
+    const handleRegister = async (eventId: string) => {
+    if (!user) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+
+    try {
+      await apiService.registerToEvent(parseInt(eventId), user.name);
+      
+      const newRegisteredEvents = new Set(registeredEvents).add(eventId);
+      setRegisteredEvents(newRegisteredEvents);
+      
+      localStorage.setItem(
+        `registrations_${user.email}`,
+        JSON.stringify([...newRegisteredEvents])
+      );
+      
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId
+            ? { 
+                ...event, 
+                currentAttendees: event.currentAttendees + 1, 
+                isRegistered: true 
+              }
+            : event
+        )
+      );
+
+      toast.success(`¡Te has inscrito a "${events.find(e => e.id === eventId)?.title}"!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Error al registrarse');
+      console.error(err);
+    }
   };
 
   const filteredEvents = filterView === 'all' 
@@ -111,11 +139,16 @@ export default function App() {
   const registeredCount = events.filter(e => e.isRegistered).length;
 
   const handleLogin = (email: string, name: string) => {
-    setUser({ email, name });
+    const userData = { email, name };
+    setUser(userData);
+    localStorage.setItem('eventhub_user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
+    setEvents([]); 
+    setRegisteredEvents(new Set()); 
+    localStorage.removeItem('eventhub_user'); 
     toast.success('Sesión cerrada exitosamente');
   };
 
@@ -147,6 +180,13 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+                <button
+                onClick={loadEvents}
+                className="bg-gray-100 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                disabled={loading}
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md hover:shadow-lg"
@@ -224,6 +264,15 @@ export default function App() {
             Mis Inscripciones ({registeredCount})
           </button>
         </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 mt-4">Cargando eventos...</p>
+          </div>
+        ) : (
+          <EventList events={filteredEvents} onRegister={handleRegister} />
+        )}
 
         {/* Event List */}
         <EventList events={filteredEvents} onRegister={handleRegister} />

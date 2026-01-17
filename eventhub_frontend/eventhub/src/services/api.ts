@@ -66,4 +66,68 @@ export const apiService = {
       return 0;
     }
   },
+
+    async createEvent(eventData: {
+    title: string;
+    date: string;
+    location: string;
+    description: string;
+    maxAttendees: number;
+  }): Promise<CreateEventResponse> {
+    try {
+      const backendData: BackendEvent = {
+        title: eventData.title,
+        description: eventData.description,
+        eventDate: eventData.date,
+        location: eventData.location,
+        maxCapacity: eventData.maxAttendees,
+      };
+
+      const response = await fetch(`${API_URL}/events`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(backendData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear evento');
+      }
+
+      const data: CreateEventResponse = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error creating event:', error);
+      throw error;
+    }
+  },
+
+  async registerToEvent(eventId: number, userName: string): Promise<RegisterResponse> {
+    try {
+      const response = await fetch(`${API_URL}/registrations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventId: eventId,
+          userName: userName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al registrarse');
+      }
+
+      const data: RegisterResponse = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error registering to event:', error);
+      throw error;
+    }
+  },
 };
+    
