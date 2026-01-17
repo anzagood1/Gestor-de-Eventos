@@ -30,3 +30,40 @@ export interface RegistrationsResponse {
     registrationDate: string;
   }>;
 }
+
+const API_URL = 'http://localhost:8080/api';
+
+export const apiService = {
+
+  async getEvents(): Promise<BackendEvent[]> {
+    try {
+      const response = await fetch(`${API_URL}/events`);
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener eventos');
+      }
+      
+      const data: EventsResponse = await response.json();
+      return data.events;
+    } catch (error) {
+      console.error('Error getting events:', error);
+      throw error;
+    }
+  },
+
+  async getEventRegistrations(eventId: number): Promise<number> {
+    try {
+      const response = await fetch(`${API_URL}/events/${eventId}/registrations`);
+
+      if (!response.ok) {
+        return 0;
+      }
+
+      const data: RegistrationsResponse = await response.json();
+      return data.registrations.length;
+    } catch (error) {
+      console.error('Error getting registrations:', error);
+      return 0;
+    }
+  },
+};

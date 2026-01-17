@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Plus, Calendar, Filter, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Calendar, Filter, LogOut} from 'lucide-react';
 import { CreateEventModal } from './components/CreateEventModal';
 import { EventList } from './components/EventList';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { toast, Toaster } from 'sonner';
+import { apiService, BackendEvent } from './services/api';
 
 interface Event {
   id: string;
@@ -18,41 +19,65 @@ interface Event {
 
 export default function App() {
   const [user, setUser] = useState<{ email: string; name: string } | null>(null);
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Conferencia de Tecnología 2025',
-      date: '2025-12-20T10:00',
-      location: 'Centro de Convenciones',
-      description: 'La mayor conferencia de tecnología del año. Speakers internacionales y networking.',
-      maxAttendees: 200,
-      currentAttendees: 145,
-      isRegistered: false,
-    },
-    {
-      id: '2',
-      title: 'Workshop de Desarrollo Web',
-      date: '2025-12-18T14:00',
-      location: 'Campus Universitario',
-      description: 'Aprende las últimas tecnologías web con expertos de la industria.',
-      maxAttendees: 50,
-      currentAttendees: 32,
-      isRegistered: false,
-    },
-    {
-      id: '3',
-      title: 'Meetup de Emprendedores',
-      date: '2025-12-22T18:00',
-      location: 'Coworking Space Downtown',
-      description: 'Conecta con otros emprendedores, comparte ideas y encuentra colaboradores.',
-      maxAttendees: 30,
-      currentAttendees: 28,
-      isRegistered: false,
-    },
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterView, setFilterView] = useState<'all' | 'registered'>('all');
+
+  const [loading, setLoading] = useState(false);
+  const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('eventhub_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadEvents();
+      const saved = localStorage.getItem(`registrations_${user.email}`);
+      if (saved) {
+        setRegisteredEvents(new Set(JSON.parse(saved)));
+      }
+    }
+  }, [user]);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      
+      const backendEvents = await apiService.getEvents();
+
+      const formattedEvents: Event[] = await Promise.all(
+        backendEvents.map(async (event: BackendEvent) => {
+          const currentAttendees = event.id 
+            ? await apiService.getEventRegistrations(event.id)
+            : 0;
+
+          const eventId = event.id?.toString() || '';
+
+          return {
+            id: eventId,
+            title: event.title,
+            date: event.eventDate,
+            location: event.location,
+            description: event.description,
+            maxAttendees: event.maxCapacity,
+            currentAttendees: currentAttendees,
+            isRegistered: registeredEvents.has(eventId),
+          };
+        })
+      );
+      setEvents(formattedEvents);
+    } catch (err) {
+      toast.error('No se pudieron cargar los eventos');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateEvent = (eventData: Omit<Event, 'id' | 'currentAttendees' | 'isRegistered'>) => {
     const newEvent: Event = {
