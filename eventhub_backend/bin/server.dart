@@ -2,45 +2,84 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:mysql1/mysql1.dart';
-
 import '../lib/controllers/event_controller.dart';
 
-void main() async {
-  // Configuración de conexión a Google Cloud SQL
+// Middleware para CORS (permitir peticiones desde React)
+Response corsMiddleware(Response response) {
+  return response.change(headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Origin, Content-Type',
+  });
+}
 
-  final settings = ConnectionSettings(
-    host: '34.59.182.43', // IP de la instancia en Google Cloud
+Middleware handleCors() {
+  return (Handler handler) {
+    return (Request request) async {
+      // Si es una petición OPTIONS, responder inmediatamente
+      if (request.method == 'OPTIONS') {
+        return corsMiddleware(Response.ok(''));
+      }
+      
+      // Procesar la petición normal y agregar headers CORS
+      Response response = await handler(request);
+      return corsMiddleware(response);
+    };
+  };
+}
+
+void main() async {
+  // Configuración de la base de datos
+  var settings = ConnectionSettings(
+    host: '34.59.182.43',
     port: 3306,
     user: 'admin',
     password: 'admin',
     db: 'EventPlanner',
-    timeout: Duration(seconds: 30),
   );
 
-  print('Conectando a base de datos');
+  print('Conectando a la base de datos...');
 
   try {
-    final conn = await MySqlConnection.connect(settings);
-    print('Conexión establecida con éxito a la base de datos.');
+    // Conectar a la base de datos
+    var conn = await MySqlConnection.connect(settings);
+    print('Conectado a la base de datos');
 
-    final eventController = EventController(conn);
-    final app = Router();
+    // Crear el controlador
+    var eventController = EventController(conn);
 
-    app.get('/events', eventController.getAllEvents);
-    app.post('/events', eventController.createEvent);
-    app.post('/registrations', eventController.registerToEvent);
+    // Crear las rutas
+    var app = Router();
 
+    // Rutas de eventos
+    app.get('/api/events', eventController.getAllEvents);
+    app.post('/api/events', eventController.createEvent);
 
-    // Pipeline para manejo de errores y logs
-    final handler = Pipeline()
+    // Rutas de registros
+    app.post('/api/registrations', eventController.registerToEvent);
+    app.get('/api/events/<id>/registrations', eventController.getEventRegistrations);
+
+    // Ruta de prueba
+    app.get('/health', (Request request) {
+      return Response.ok('El servidor se encuentra en linea!');
+    });
+
+    // Configurar middlewares
+    var handler = Pipeline()
         .addMiddleware(logRequests())
+        .addMiddleware(handleCors())
         .addHandler(app);
 
-    // Iniciar el servidor localmente
-    final server = await io.serve(handler, '0.0.0.0', 8080);
-    print('Servidor Backend activo en http://${server.address.host}:${server.port}');
-    
+    // Iniciar el servidor
+    var server = await io.serve(handler, '0.0.0.0', 8080);
+    print('Servidor corriendo en http://localhost:${server.port}');
+    print('Endpoints disponibles:');
+    print('  - GET  http://localhost:${server.port}/api/events');
+    print('  - POST http://localhost:${server.port}/api/events');
+    print('  - POST http://localhost:${server.port}/api/registrations');
+    print('  - GET  http://localhost:${server.port}/api/events/<id>/registrations');
+
   } catch (e) {
-    print('Error crítico al iniciar el servidor o conectar a la BD: $e');
+    print('✗ Error: $e');
   }
 }

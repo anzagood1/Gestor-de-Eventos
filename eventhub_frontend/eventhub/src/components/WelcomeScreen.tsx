@@ -88,7 +88,7 @@ export function WelcomeScreen({ onLogin }: WelcomeScreenProps) {
               </div>
               <div>
                 <h4 className="text-white">Gestiona</h4>
-                <p className="text-blue-100 text-sm">Administra tus inscripciones en un solo lugar</p>
+                <p className="text-[blue-100] text-sm">Administra tus inscripciones en un solo lugar</p>
               </div>
             </div>
           </div>
@@ -182,7 +182,7 @@ export function WelcomeScreen({ onLogin }: WelcomeScreenProps) {
 
             <button
               type="submit"
-              className="w-full bg-[#3d25f5] text-white py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:from-blue-600 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
             >
               {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
               <ArrowRight className="w-5 h-5" />
@@ -203,7 +203,7 @@ export function WelcomeScreen({ onLogin }: WelcomeScreenProps) {
                     confirmPassword: '',
                   });
                 }}
-                className="text-blue-600 hover:text-blue-700"
+                className="text-blue-600 hover:text-blue-800"
               >
                 {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
               </button>
