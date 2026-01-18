@@ -1,6 +1,6 @@
 // Tipos para el backend
 export interface BackendEvent {
-  id?: number;
+  id: number;
   title: string;
   description: string;
   eventDate: string;
@@ -36,19 +36,9 @@ const API_URL = 'http://localhost:8080/api';
 export const apiService = {
 
   async getEvents(): Promise<BackendEvent[]> {
-    try {
-      const response = await fetch(`${API_URL}/events`);
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener eventos');
-      }
-      
-      const data: EventsResponse = await response.json();
-      return data.events;
-    } catch (error) {
-      console.error('Error getting events:', error);
-      throw error;
-    }
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("Error al cargar eventos");
+    return res.json();
   },
 
   async getEventRegistrations(eventId: number): Promise<number> {
@@ -68,14 +58,16 @@ export const apiService = {
   },
 
     async createEvent(eventData: {
-    title: string;
-    date: string;
-    location: string;
-    description: string;
-    maxAttendees: number;
+      id: number;
+      title: string;
+      date: string;
+      location: string;
+      description: string;
+      maxAttendees: number;
   }): Promise<CreateEventResponse> {
     try {
       const backendData: BackendEvent = {
+        id: eventData.id,
         title: eventData.title,
         description: eventData.description,
         eventDate: eventData.date,

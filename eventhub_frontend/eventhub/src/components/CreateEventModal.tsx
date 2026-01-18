@@ -5,6 +5,7 @@ interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateEvent: (event: {
+    id: number;
     title: string;
     date: string;
     location: string;
@@ -15,6 +16,7 @@ interface CreateEventModalProps {
 
 export function CreateEventModal({ isOpen, onClose, onCreateEvent }: CreateEventModalProps) {
   const [formData, setFormData] = useState({
+    id: 0,
     title: '',
     date: '',
     location: '',
@@ -28,6 +30,7 @@ export function CreateEventModal({ isOpen, onClose, onCreateEvent }: CreateEvent
     e.preventDefault();
     onCreateEvent(formData);
     setFormData({
+      id: 0,
       title: '',
       date: '',
       location: '',

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Filter, LogOut} from 'lucide-react';
+import { Plus, Calendar, Filter, LogOut, RefreshCw} from 'lucide-react';
 import { CreateEventModal } from './components/CreateEventModal';
 import { EventList } from './components/EventList';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { toast, Toaster } from 'sonner';
-import { apiService, BackendEvent } from './services/api';
+import { apiService } from './services/api';
+import type { BackendEvent } from './services/api';
 
 interface Event {
   id: string;
@@ -80,6 +81,7 @@ export default function App() {
   };
 
   const handleCreateEvent = async (eventData: {
+    id: number;
     title: string;
     date: string;
     location: string;
@@ -89,7 +91,7 @@ export default function App() {
     try {
       await apiService.createEvent(eventData);
       toast.success('¡Evento creado exitosamente!');
-      await loadEvents(); // ← Recargar eventos desde el backend
+      await loadEvents();
     } catch (err: any) {
       toast.error(err.message || 'Error al crear el evento');
       console.error(err);

@@ -1,36 +1,42 @@
+import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:mysql1/mysql1.dart';
-import '../lib/controllers/event_controller.dart';
 
-// Middleware para CORS (permitir peticiones desde React)
-Response corsMiddleware(Response response) {
-  return response.change(headers: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, Content-Type',
-  });
-}
+import '../controllers/auth_controller.dart';
+import '../controllers/event_controller.dart';
 
 Middleware handleCors() {
   return (Handler handler) {
     return (Request request) async {
-      // Si es una petición OPTIONS, responder inmediatamente
       if (request.method == 'OPTIONS') {
-        return corsMiddleware(Response.ok(''));
+        return Response.ok(
+          '',
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods':
+                'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers':
+                'Origin, Content-Type, Authorization',
+          },
+        );
       }
-      
-      // Procesar la petición normal y agregar headers CORS
-      Response response = await handler(request);
-      return corsMiddleware(response);
+
+      final response = await handler(request);
+      return response.change(headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods':
+            'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers':
+            'Origin, Content-Type, Authorization',
+      });
     };
   };
 }
 
 void main() async {
-  // Configuración de la base de datos
-  var settings = ConnectionSettings(
+  final settings = ConnectionSettings(
     host: '34.59.182.43',
     port: 3306,
     user: 'admin',
@@ -38,48 +44,58 @@ void main() async {
     db: 'EventPlanner',
   );
 
-  print('Conectando a la base de datos...');
-
   try {
-    // Conectar a la base de datos
-    var conn = await MySqlConnection.connect(settings);
-    print('Conectado a la base de datos');
+    final conn = await MySqlConnection.connect(settings);
+    print('Conectado a MySQL');
 
-    // Crear el controlador
-    var eventController = EventController(conn);
+    final router = Router();
 
-    // Crear las rutas
-    var app = Router();
+    final authController = AuthController(conn);
+    final eventController = EventController(conn);
 
-    // Rutas de eventos
-    app.get('/api/events', eventController.getAllEvents);
-    app.post('/api/events', eventController.createEvent);
+    // AUTH
+    router.post('/api/register', authController.register);
+    router.post('/api/login', authController.login);
 
-    // Rutas de registros
-    app.post('/api/registrations', eventController.registerToEvent);
-    app.get('/api/events/<id>/registrations', eventController.getEventRegistrations);
+    // EVENTS (ejemplo)
+    router.get('/api/events', eventController.getAllEvents);
 
-    // Ruta de prueba
-    app.get('/health', (Request request) {
-      return Response.ok('El servidor se encuentra en linea!');
+    // HEALTH
+    router.get('/health', (_) {
+      return Response.ok(
+        jsonEncode({'status': 'ok'}),
+        headers: {'Content-Type': 'application/json'},
+      );
     });
 
-    // Configurar middlewares
-    var handler = Pipeline()
+    router.get('/events', (Request req) async {
+    final result = await conn.query('SELECT * FROM events');
+
+    final events = result.map((row) {
+      return {
+        'id': row['id'],
+        'title': row['title'],
+        'description': row['description'],
+        'eventDate': row['event_date'].toString(),
+        'location': row['location'],
+        'maxCapacity': row['max_capacity'],
+      };
+    }).toList();
+
+    return Response.ok(
+      jsonEncode(events),
+      headers: {'Content-Type': 'application/json'},
+      );
+    });
+
+    final handler = Pipeline()
         .addMiddleware(logRequests())
         .addMiddleware(handleCors())
-        .addHandler(app);
+        .addHandler(router);
 
-    // Iniciar el servidor
-    var server = await io.serve(handler, '0.0.0.0', 8080);
-    print('Servidor corriendo en http://localhost:${server.port}');
-    print('Endpoints disponibles:');
-    print('  - GET  http://localhost:${server.port}/api/events');
-    print('  - POST http://localhost:${server.port}/api/events');
-    print('  - POST http://localhost:${server.port}/api/registrations');
-    print('  - GET  http://localhost:${server.port}/api/events/<id>/registrations');
-
+    final server = await io.serve(handler, '0.0.0.0', 8080);
+    print('Server running on http://localhost:${server.port}');
   } catch (e) {
-    print('✗ Error: $e');
+    print('Error: $e');
   }
 }

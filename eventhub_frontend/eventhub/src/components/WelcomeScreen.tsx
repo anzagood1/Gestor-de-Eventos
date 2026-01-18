@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Calendar, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { login, register } from "../api/auth";
+
 
 interface WelcomeScreenProps {
   onLogin: (email: string, name: string) => void;
@@ -15,29 +17,27 @@ export function WelcomeScreen({ onLogin }: WelcomeScreenProps) {
     confirmPassword: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLogin) {
-      // Validaciones de registro
-      if (formData.password !== formData.confirmPassword) {
-        toast.error('Las contraseñas no coinciden');
-        return;
-      }
-      if (formData.password.length < 6) {
-        toast.error('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-      if (!formData.name.trim()) {
-        toast.error('Por favor ingresa tu nombre');
-        return;
-      }
-    }
+    try {
+      if (isLogin) {
+        const user = await login(formData.email, formData.password);
+        toast.success("¡Bienvenido!");
+        onLogin(user.email, user.userName);
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Las contraseñas no coinciden");
+          return;
+        }
 
-    // Simular autenticación exitosa
-    const userName = isLogin ? formData.email.split('@')[0] : formData.name;
-    toast.success(isLogin ? '¡Bienvenido de nuevo!' : '¡Cuenta creada exitosamente!');
-    onLogin(formData.email, userName);
+        await register(formData.name, formData.email, formData.password);
+        toast.success("Cuenta creada correctamente");
+        setIsLogin(true);
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -46,7 +46,7 @@ export function WelcomeScreen({ onLogin }: WelcomeScreenProps) {
       alt="Eventhub Background"
       className = "fixed inset-0 w-full h-full object-cover brightness-25 object-center"
       />
-<div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-start text-left">        {/* Left Side - Branding */}
+    <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-start text-left">        {/* Left Side - Branding */}
         <div className="text-white space-y-6 lg:pr-12">
           <div className="flex items-center gap-4">
             <div className="bg-white p-4 rounded-2xl">
