@@ -36,9 +36,20 @@ const API_URL = 'http://localhost:8080/api';
 export const apiService = {
 
   async getEvents(): Promise<BackendEvent[]> {
-    const res = await fetch(API_URL);
+    const res = await fetch(`${API_URL}/events`);
     if (!res.ok) throw new Error("Error al cargar eventos");
-    return res.json();
+
+    const data = await res.json();
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && Array.isArray(data.events)) {
+      return data.events;
+    }
+
+    throw new Error("Respuesta inválida del servidor de eventos");
   },
 
   async getEventRegistrations(eventId: number): Promise<number> {

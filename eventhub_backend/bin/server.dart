@@ -57,8 +57,11 @@ void main() async {
     router.post('/api/register', authController.register);
     router.post('/api/login', authController.login);
 
-    // EVENTS (ejemplo)
+    // EVENTS
     router.get('/api/events', eventController.getAllEvents);
+    router.post('/api/events', eventController.createEvent);
+    router.post('/api/registrations', eventController.registerToEvent);
+    router.get('/api/events/<id>/registrations', eventController.getEventRegistrations);
 
     // HEALTH
     router.get('/health', (_) {
@@ -69,22 +72,27 @@ void main() async {
     });
 
     router.get('/events', (Request req) async {
-    final result = await conn.query('SELECT * FROM events');
+      final result = await conn.query(
+        'SELECT id, title, description, event_date, location, max_capacity '
+        'FROM events '
+        'WHERE event_date >= NOW() - INTERVAL 5 DAY '
+        'AND event_date <= NOW() + INTERVAL 1 YEAR',
+      );
 
-    final events = result.map((row) {
-      return {
-        'id': row['id'],
-        'title': row['title'],
-        'description': row['description'],
-        'eventDate': row['event_date'].toString(),
-        'location': row['location'],
-        'maxCapacity': row['max_capacity'],
-      };
-    }).toList();
+      final events = result.map((row) {
+        return {
+          'id': row['id'],
+          'title': row['title'],
+          'description': row['description'],
+          'eventDate': row['event_date'].toString(),
+          'location': row['location'],
+          'maxCapacity': row['max_capacity'],
+        };
+      }).toList();
 
-    return Response.ok(
-      jsonEncode(events),
-      headers: {'Content-Type': 'application/json'},
+      return Response.ok(
+        jsonEncode(events),
+        headers: {'Content-Type': 'application/json'},
       );
     });
 

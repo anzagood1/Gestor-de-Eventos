@@ -275,9 +275,6 @@ export default function App() {
         ) : (
           <EventList events={filteredEvents} onRegister={handleRegister} />
         )}
-
-        {/* Event List */}
-        <EventList events={filteredEvents} onRegister={handleRegister} />
       </main>
 
       {/* Create Event Modal */}

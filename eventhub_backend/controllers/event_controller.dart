@@ -13,8 +13,11 @@ class EventController {
   Future<Response> getAllEvents(Request request) async {
     try {
       // Hacer query a la base de datos
-      var results = await db.query(
-          'SELECT id, title, description, event_date, location, max_capacity FROM events');
+        var results = await db.query(
+          'SELECT id, title, description, event_date, location, max_capacity '
+          'FROM events '
+          'WHERE event_date >= NOW() - INTERVAL 5 DAY '
+          'AND event_date <= NOW() + INTERVAL 1 YEAR');
 
       // Convertir resultados a lista de eventos
       List<Map<String, dynamic>> eventsList = [];
@@ -165,7 +168,7 @@ class EventController {
       int eventId = int.parse(id);
 
       var results = await db.query(
-        'SELECT id, event_id, user_name, registration_date FROM registrations WHERE event_id = ?',
+        'SELECT id, event_id, user_name FROM registrations WHERE event_id = ?',
         [eventId],
       );
 

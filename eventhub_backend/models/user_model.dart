@@ -4,9 +4,9 @@ class UserModel {
   final _settings = ConnectionSettings(
     host: 'localhost',
     port: 3306,
-    user: 'NoviaDeAngel',
-    password: 'KatsukiBakugo',
-    db: 'eventhub',
+    user: 'admin',
+    password: 'admin',
+    db: 'EventPlanner',
   );
 
   Future<Map<String, dynamic>> createUser({

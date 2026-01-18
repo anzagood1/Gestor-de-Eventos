@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:mysql1/mysql1.dart';
+
 class Event {
   int? id;
   String title;
@@ -27,10 +30,10 @@ class Event {
   // Convertir fila de base de datos a Event
   Event.fromDatabase(dynamic row)
       : id = row['id'],
-        title = row['title'],
-        description = row['description'],
+        title = _fieldToString(row['title']),
+        description = _fieldToString(row['description']),
         eventDate = row['event_date'],
-        location = row['location'],
+        location = _fieldToString(row['location']),
         maxCapacity = row['max_capacity'];
 
   // Convertir Event a JSON
@@ -44,4 +47,12 @@ class Event {
       'maxCapacity': maxCapacity,
     };
   }
+}
+
+String _fieldToString(dynamic value) {
+  if (value == null) return '';
+  if (value is Blob) {
+    return utf8.decode(value.toBytes());
+  }
+  return value.toString();
 }
